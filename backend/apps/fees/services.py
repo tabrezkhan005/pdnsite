@@ -3,6 +3,8 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db import transaction
 from django.utils import timezone
 
+from apps.accounts.services import log_audit_event
+
 from .models import Adjustment, Concession, FeePlan, Invoice, InvoiceLine, TaxConfig
 
 
@@ -147,6 +149,13 @@ def generate_invoices_for_period(assignment, period_start, period_end, issue_dat
         invoice.status = Invoice.Status.ISSUED
         invoice.save(update_fields=['status', 'invoice_number'])
 
+        log_audit_event(
+            actor=None, # System task
+            action="INVOICE_ISSUED",
+            target=invoice,
+            after_state={"amount": invoice.total_paise}
+        )
+
     return invoice
 
 def apply_late_fees(invoice):
@@ -184,6 +193,13 @@ def apply_late_fees(invoice):
             invoice.save(update_fields=['late_fee_paise', 'status'])
             recalculate_invoice_totals(invoice)
 
+            log_audit_event(
+                actor=None, # System task
+                action="INVOICE_LATE_FEE_APPLIED",
+                target=invoice,
+                after_state={"late_fee": late_fee, "total": invoice.total_paise}
+            )
+
 def cancel_invoice(invoice):
     """
     Cancels an invoice only if there are no payments.
@@ -193,6 +209,14 @@ def cancel_invoice(invoice):
 
     invoice.status = Invoice.Status.CANCELLED
     invoice.save(update_fields=['status'])
+
+    # Ideally should pass user, but this is a simple cancel
+    log_audit_event(
+        actor=None,
+        action="INVOICE_CANCELLED",
+        target=invoice,
+        after_state={"status": Invoice.Status.CANCELLED}
+    )
 
 def void_invoice(invoice, reason, user):
     """
@@ -213,6 +237,13 @@ def void_invoice(invoice, reason, user):
         invoice.balance_paise = 0
         invoice.status = Invoice.Status.VOID
         invoice.save(update_fields=['paid_paise', 'balance_paise', 'status'])
+
+        log_audit_event(
+            actor=user,
+            action="INVOICE_VOIDED",
+            target=invoice,
+            after_state={"reason": reason}
+        )
 
 def add_one_time_charge(invoice, fee_item):
     """
@@ -236,4 +267,12 @@ def add_one_time_charge(invoice, fee_item):
             tax_rate_bp=tax_rate
         )
         recalculate_invoice_totals(invoice)
+
+        # In a real app we'd pass user here too, assuming actor=None for simplicity
+        log_audit_event(
+            actor=None,
+            action="INVOICE_ONE_TIME_CHARGE_ADDED",
+            target=invoice,
+            after_state={"charge": fee_item.amount_paise}
+        )
 

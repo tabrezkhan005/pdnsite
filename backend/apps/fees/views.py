@@ -38,7 +38,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
                 return Invoice.objects.filter(student__branch=user.staff_profile.branch)
             return Invoice.objects.none()
 
-        students = scope_students(user)
+        students = scope_students(StudentProfile.objects.all(), user)
         return Invoice.objects.filter(student__in=students)
 
 class PaymentViewSet(viewsets.GenericViewSet):
