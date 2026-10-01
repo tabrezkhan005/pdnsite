@@ -29,3 +29,22 @@ class StudentFeeAssignmentAdmin(admin.ModelAdmin):
     list_display = ("student", "fee_plan", "start_date", "end_date", "status")
     list_filter = ("status", "fee_plan__frequency")
     search_fields = ("student__full_name",)
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ("invoice_number", "student", "status", "issue_date", "due_date", "total_paise", "balance_paise")
+    list_filter = ("status", "issue_date")
+    search_fields = ("invoice_number", "student__full_name")
+    
+@admin.register(InvoiceLine)
+class InvoiceLineAdmin(admin.ModelAdmin):
+    list_display = ("invoice", "description", "line_total_paise")
+    
+@admin.register(InvoiceCounter)
+class InvoiceCounterAdmin(admin.ModelAdmin):
+    list_display = ("financial_year", "last_value")
+    
+@admin.register(Adjustment)
+class AdjustmentAdmin(admin.ModelAdmin):
+    list_display = ("invoice", "type", "amount_paise", "approved_by")
+    list_filter = ("type",)

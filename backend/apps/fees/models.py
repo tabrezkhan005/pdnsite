@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 from apps.academics.models import Course, Enrollment, Level
 from apps.accounts.models import StudentProfile
@@ -98,5 +98,113 @@ class StudentFeeAssignment(TimeStampedModel, SoftDeleteModel):
     end_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
 
+class InvoiceCounter(models.Model):
+    financial_year = models.CharField(max_length=10) # e.g. "FY2026-27"
+    last_value = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ("financial_year",)
+
     def __str__(self):
-        return f"{self.fee_plan.name} -> {self.student.full_name}"
+        return f"{self.financial_year}: {self.last_value}"
+
+    @classmethod
+    def generate_number(cls):
+        from datetime import date
+        today = date.today()
+        # FY starts in April
+        if today.month >= 4:
+            fy = f"FY{today.year}-{(today.year+1)%100}"
+        else:
+            fy = f"FY{today.year-1}-{today.year%100}"
+
+        with transaction.atomic():
+            counter, _ = cls.objects.select_for_update().get_or_create(financial_year=fy)
+            counter.last_value += 1
+            counter.save()
+            return f"PDN/{fy}/{counter.last_value:05d}"
+
+class Invoice(TimeStampedModel, SoftDeleteModel):
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        ISSUED = "ISSUED", "Issued"
+        PARTIALLY_PAID = "PARTIALLY_PAID", "Partially Paid"
+        PAID = "PAID", "Paid"
+        OVERDUE = "OVERDUE", "Overdue"
+        CANCELLED = "CANCELLED", "Cancelled"
+        VOID = "VOID", "Void"
+
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name="invoices")
+    guardian = models.ForeignKey('accounts.GuardianProfile', on_delete=models.CASCADE, related_name="invoices")
+    fee_plan = models.ForeignKey(FeePlan, on_delete=models.SET_NULL, null=True, blank=True, related_name="invoices")
+
+    invoice_number = models.CharField(max_length=50, unique=True, blank=True)
+
+    period_start = models.DateField(null=True, blank=True)
+    period_end = models.DateField(null=True, blank=True)
+
+    issue_date = models.DateField(null=True, blank=True)
+    due_date = models.DateField(null=True, blank=True)
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+
+    subtotal_paise = models.IntegerField(default=0)
+    discount_paise = models.IntegerField(default=0)
+    tax_paise = models.IntegerField(default=0)
+    late_fee_paise = models.IntegerField(default=0)
+
+    total_paise = models.IntegerField(default=0)
+    paid_paise = models.IntegerField(default=0)
+    balance_paise = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "fee_plan", "period_start", "period_end"],
+                name="unique_invoice_per_student_plan_period",
+                condition=models.Q(fee_plan__isnull=False, period_start__isnull=False, period_end__isnull=False)
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.invoice_number or 'DRAFT'} - {self.student.full_name}"
+
+    def save(self, *args, **kwargs):
+        # Generate invoice number only upon saving as ISSUED (if not already set)
+        if self.status != self.Status.DRAFT and self.status != self.Status.CANCELLED and not self.invoice_number:
+            self.invoice_number = InvoiceCounter.generate_number()
+        super().save(*args, **kwargs)
+
+class InvoiceLine(TimeStampedModel):
+    class SourceType(models.TextChoices):
+        PLAN = "PLAN", "Fee Plan"
+        ITEM = "ITEM", "Fee Item"
+        OTHER = "OTHER", "Other"
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="lines")
+    description = models.CharField(max_length=255)
+    quantity = models.PositiveIntegerField(default=1)
+    unit_amount_paise = models.IntegerField()
+    tax_rate_bp = models.PositiveIntegerField(default=0)
+    line_total_paise = models.IntegerField()
+
+    source_type = models.CharField(max_length=20, choices=SourceType.choices, default=SourceType.OTHER)
+    source_id = models.CharField(max_length=50, blank=True) # UUID string or similar
+
+    def __str__(self):
+        return f"{self.invoice} - {self.description}"
+
+class Adjustment(TimeStampedModel):
+    class Type(models.TextChoices):
+        CREDIT = "CREDIT", "Credit"
+        DEBIT = "DEBIT", "Debit"
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="adjustments")
+    type = models.CharField(max_length=20, choices=Type.choices)
+    amount_paise = models.PositiveIntegerField()
+    reason = models.TextField()
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return f"{self.type} of {self.amount_paise} on {self.invoice}"
