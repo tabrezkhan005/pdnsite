@@ -6,6 +6,7 @@ from common.models import SoftDeleteModel, TimeStampedModel
 class Branch(TimeStampedModel, SoftDeleteModel):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
+    code = models.CharField(max_length=10, unique=True, help_text="Short code for Student ID (e.g. GNT)", null=True)
     address = models.TextField()
     phone = models.CharField(max_length=50)
     email = models.EmailField(blank=True)

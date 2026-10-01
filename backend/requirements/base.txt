@@ -12,6 +12,9 @@ dj-database-url==2.3.0
 gunicorn==23.0.0
 whitenoise==6.8.2
 
+# Utilities
+phonenumbers==8.13.53
+
 # API documentation
 drf-spectacular==0.28.0
 
