@@ -1,12 +1,13 @@
 from django.db import models
 from django.db.models import Q
+
 from common.models import SoftDeleteModel, TimeStampedModel
-from django.core.exceptions import ValidationError
+
 
 class Branch(TimeStampedModel, SoftDeleteModel):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
-    code = models.CharField(max_length=10, unique=True, help_text="Short code for Student ID (e.g. GNT)", null=True)
+    code = models.CharField(max_length=10, unique=True, help_text="Short code for Student ID (e.g. GNT)", null=True)  # noqa: DJ001
     address = models.TextField()
     phone = models.CharField(max_length=50)
     email = models.EmailField(blank=True)
@@ -80,17 +81,17 @@ class Batch(TimeStampedModel, SoftDeleteModel):
     level = models.ForeignKey(Level, on_delete=models.PROTECT, related_name="batches")
     branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="batches")
     teacher = models.ForeignKey("accounts.StaffProfile", on_delete=models.PROTECT, related_name="batches")
-    
+
     name = models.CharField(max_length=255)
     # days_of_week stores a list of integers 0-6 where 0=Monday, 6=Sunday
     days_of_week = models.JSONField(help_text="List of integers (0=Mon, 6=Sun)")
     start_time = models.TimeField()
     end_time = models.TimeField()
-    
+
     capacity = models.PositiveIntegerField()
     mode = models.CharField(max_length=20, choices=Mode.choices, default=Mode.OFFLINE)
     default_meeting_url = models.URLField(blank=True)
-    
+
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
@@ -124,6 +125,9 @@ class Enrollment(TimeStampedModel):
                 name="unique_active_enrollment_per_student_batch"
             )
         ]
+        indexes = [
+            models.Index(fields=["student", "status"]),
+        ]
         ordering = ["-enrolled_on"]
 
     def __str__(self):
@@ -147,7 +151,7 @@ class ClassSession(TimeStampedModel):
         SCHEDULED = "SCHEDULED", "Scheduled"
         CANCELLED = "CANCELLED", "Cancelled"
         COMPLETED = "COMPLETED", "Completed"
-        
+
     class Mode(models.TextChoices):
         OFFLINE = "OFFLINE", "Offline"
         ONLINE = "ONLINE", "Online"
@@ -158,7 +162,7 @@ class ClassSession(TimeStampedModel):
     ends_at = models.DateTimeField()
     mode = models.CharField(max_length=20, choices=Mode.choices)
     meeting_url = models.URLField(blank=True)
-    
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
     cancellation_reason = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
@@ -171,6 +175,9 @@ class ClassSession(TimeStampedModel):
                 fields=["batch", "starts_at"],
                 name="unique_batch_session_start"
             )
+        ]
+        indexes = [
+            models.Index(fields=["batch", "starts_at"]),
         ]
 
     def __str__(self):

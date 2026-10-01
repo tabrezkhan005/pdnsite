@@ -1,11 +1,12 @@
 from django.urls import path
+
 from .views import (
-    RequestOTPView,
-    VerifyOTPView,
+    CSRFView,
     LoginView,
     LogoutView,
     MeView,
-    CSRFView,
+    RequestOTPView,
+    VerifyOTPView,
 )
 
 urlpatterns = [

@@ -1,13 +1,21 @@
+from datetime import timedelta
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from datetime import timedelta
-from rest_framework import viewsets, permissions, status, views, response
+from rest_framework import permissions, response, status, views, viewsets
 from rest_framework.decorators import action
-from .models import Attendance, LeaveRequest
+
 from apps.academics.models import ClassSession, Enrollment
 from apps.accounts.services import log_audit_event
-from .serializers import AttendanceSerializer, BulkAttendanceSerializer, LeaveRequestSerializer, SessionSerializer
-from .services import join_session, approve_leave, get_attendance_summary
+
+from .models import Attendance, LeaveRequest
+from .serializers import (
+    BulkAttendanceSerializer,
+    LeaveRequestSerializer,
+    SessionSerializer,
+)
+from .services import approve_leave, get_attendance_summary, join_session
+
 
 class SessionViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -15,7 +23,7 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = SessionSerializer
-    
+
     def get_queryset(self):
         from apps.accounts.scopes import scope_sessions
         return scope_sessions(ClassSession.objects.all(), self.request.user)
@@ -23,16 +31,16 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def roster(self, request, pk=None):
         session = self.get_object()
-        
+
         # Get active enrollments for the batch at the time of the session
         # For simplicity, we just check current ACTIVE status, but ideally
         # we check if enrolled_on <= session.date and (ended_on >= session.date or null)
         # Assuming current active enrollments:
         enrollments = Enrollment.objects.filter(batch=session.batch, status=Enrollment.Status.ACTIVE)
-        
+
         attendances = Attendance.objects.filter(session=session)
         attendance_map = {a.student_id: a for a in attendances}
-        
+
         roster_data = []
         for en in enrollments:
             student = en.student
@@ -43,33 +51,33 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
                 "status": att.status if att else None,
                 "note": att.note if att else "",
             })
-            
+
         return response.Response(roster_data)
 
     @action(detail=True, methods=['post'])
     def bulk_mark(self, request, pk=None):
         session = self.get_object()
         user = request.user
-        
+
         # Edit window: allowed within 48 hours of session end. Admin override ignores this.
         window_end = session.ends_at + timedelta(hours=48)
         is_admin = user.role == "ADMIN"
-        
+
         if not is_admin and timezone.now() > window_end:
             return response.Response({"detail": "Edit window closed. Contact admin."}, status=status.HTTP_403_FORBIDDEN)
-            
+
         serializer = BulkAttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         attendances = serializer.validated_data["attendances"]
-        
+
         from django.db import transaction
         with transaction.atomic():
             for att_data in attendances:
                 student_id = att_data["student_id"]
                 att_status = att_data["status"]
                 note = att_data.get("note", "")
-                
+
                 att, created = Attendance.objects.get_or_create(
                     session=session,
                     student_id=student_id,
@@ -80,7 +88,7 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
                         'note': note
                     }
                 )
-                
+
                 if not created:
                     before = {"status": att.status, "note": att.note}
                     att.status = att_status
@@ -88,7 +96,7 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
                     att.source = Attendance.Source.ADMIN_OVERRIDE if is_admin and timezone.now() > window_end else Attendance.Source.MANUAL
                     att.marked_by = user
                     att.save()
-                    
+
                     if is_admin and timezone.now() > window_end:
                         log_audit_event(
                             actor=user,
@@ -97,7 +105,7 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
                             before_state=before,
                             after_state={"status": att.status, "note": att.note}
                         )
-                        
+
         return response.Response({"detail": "Attendance marked successfully."})
 
 
@@ -110,10 +118,10 @@ class JoinSessionView(views.APIView):
     def post(self, request, pk=None):
         session = get_object_or_404(ClassSession, pk=pk)
         user = request.user
-        
-        from apps.accounts.scopes import scope_students
+
         from apps.accounts.models import StudentProfile
-        
+        from apps.accounts.scopes import scope_students
+
         student_id = request.data.get("student_id")
         if student_id:
             student = get_object_or_404(scope_students(StudentProfile.objects.all(), user), id=student_id)
@@ -122,7 +130,7 @@ class JoinSessionView(views.APIView):
                 student = user.student_profile
             else:
                 return response.Response({"detail": "student_id is required."}, status=status.HTTP_400_BAD_REQUEST)
-                
+
         try:
             url = join_session(
                 session=session,
@@ -142,11 +150,11 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = LeaveRequestSerializer
-    
+
     def get_queryset(self):
         from apps.accounts.scopes import scope_leaves
         return scope_leaves(LeaveRequest.objects.all(), self.request.user)
-        
+
     def perform_create(self, serializer):
         user = self.request.user
         serializer.save(requested_by=user)
@@ -156,11 +164,11 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         user = request.user
         if user.role not in ["STAFF", "ADMIN"]:
             return response.Response(status=status.HTTP_403_FORBIDDEN)
-            
+
         leave = self.get_object()
         if leave.status != LeaveRequest.Status.PENDING:
             return response.Response({"detail": "Leave request already decided."}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         approve_leave(leave, user)
         return response.Response({"detail": "Leave request approved."})
 
@@ -169,7 +177,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         user = request.user
         if user.role not in ["STAFF", "ADMIN"]:
             return response.Response(status=status.HTTP_403_FORBIDDEN)
-            
+
         leave = self.get_object()
         leave.status = LeaveRequest.Status.REJECTED
         leave.decided_by = user
@@ -183,14 +191,14 @@ class AttendanceSummaryView(views.APIView):
     GET /api/v1/attendance/summary/?student_id=xxx
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get(self, request):
         user = request.user
         student_id = request.query_params.get("student_id")
-        
-        from apps.accounts.scopes import scope_students
+
         from apps.accounts.models import StudentProfile
-        
+        from apps.accounts.scopes import scope_students
+
         if student_id:
             student = get_object_or_404(scope_students(StudentProfile.objects.all(), user), id=student_id)
         else:
@@ -198,6 +206,6 @@ class AttendanceSummaryView(views.APIView):
                 student = user.student_profile
             else:
                 return response.Response({"detail": "student_id is required."}, status=status.HTTP_400_BAD_REQUEST)
-                
+
         summary = get_attendance_summary(student)
         return response.Response(summary)

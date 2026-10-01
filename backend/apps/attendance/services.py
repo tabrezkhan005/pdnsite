@@ -1,9 +1,12 @@
 from datetime import timedelta
+
 from django.db import transaction
 from django.utils import timezone
-from .models import Attendance, SessionJoin, LeaveRequest
+
 from apps.academics.models import ClassSession, Enrollment
-from apps.accounts.services import log_audit_event
+
+from .models import Attendance, LeaveRequest, SessionJoin
+
 
 def get_attendance_status_for_join(session: ClassSession, join_time) -> str:
     """
@@ -22,14 +25,14 @@ def join_session(session: ClassSession, student, ip_address: str, user_agent: st
     Marks them PRESENT or LATE. Does not downgrade teacher mark.
     """
     now = timezone.now()
-    
+
     # Enforce window: 10m before to end
     join_start = session.starts_at - timedelta(minutes=10)
     if now < join_start:
         raise ValueError("Session is not yet open for joining.")
     if now > session.ends_at:
         raise ValueError("Session has already ended.")
-        
+
     # Check enrollment
     is_enrolled = Enrollment.objects.filter(
         student=student,
@@ -46,9 +49,9 @@ def join_session(session: ClassSession, student, ip_address: str, user_agent: st
             ip_address=ip_address,
             user_agent=user_agent
         )
-        
+
         status = get_attendance_status_for_join(session, now)
-        
+
         attendance, created = Attendance.objects.get_or_create(
             session=session,
             student=student,
@@ -59,7 +62,7 @@ def join_session(session: ClassSession, student, ip_address: str, user_agent: st
                 'marked_at': now
             }
         )
-        
+
         if not created:
             # Never downgrade teacher mark, but upgrade if needed
             # E.g. If marked ABSENT by teacher, but they join, mark PRESENT or LATE
@@ -77,7 +80,7 @@ def join_session(session: ClassSession, student, ip_address: str, user_agent: st
                 attendance.marked_by = actor
                 attendance.marked_at = now
                 attendance.save()
-                
+
     return session.meeting_url
 
 
@@ -87,7 +90,7 @@ def approve_leave(leave: LeaveRequest, decided_by):
         leave.decided_by = decided_by
         leave.decided_at = timezone.now()
         leave.save()
-        
+
         # Mark affected sessions EXCUSED
         if leave.session:
             sessions = [leave.session]
@@ -99,7 +102,7 @@ def approve_leave(leave: LeaveRequest, decided_by):
                 starts_at__date__lte=leave.to_date,
                 status=ClassSession.Status.SCHEDULED
             )
-            
+
         for session in sessions:
             att, created = Attendance.objects.get_or_create(
                 session=session,
@@ -126,20 +129,20 @@ def get_attendance_summary(student, batch=None):
     qs = Attendance.objects.filter(student=student, session__status=ClassSession.Status.COMPLETED)
     if batch:
         qs = qs.filter(session__batch=batch)
-        
+
     total_sessions = qs.exclude(status=Attendance.Status.EXCUSED).count()
     if total_sessions == 0:
         return {"percentage": 100, "total": 0, "present": 0, "late": 0, "absent": 0, "excused": qs.filter(status=Attendance.Status.EXCUSED).count()}
-        
+
     present = qs.filter(status=Attendance.Status.PRESENT).count()
     late = qs.filter(status=Attendance.Status.LATE).count()
     absent = qs.filter(status=Attendance.Status.ABSENT).count()
     excused = qs.filter(status=Attendance.Status.EXCUSED).count()
-    
+
     # Late can be counted as present, but maybe weighted differently?
     # Usually late is present for percentage purposes, or 50%. Assuming 100% here.
     percentage = ((present + late) / total_sessions) * 100
-    
+
     return {
         "percentage": round(percentage, 2),
         "total": total_sessions,

@@ -1,6 +1,8 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+
 from .models import User
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,18 +27,18 @@ class LoginSerializer(serializers.Serializer):
         email = data.get("email")
         password = data.get("password")
 
-        # In Django, authenticate usually takes username. 
+        # In Django, authenticate usually takes username.
         # We need a custom backend if we authenticate with email directly,
         # or we find the user by email first and authenticate.
         # But for simplicity, assuming user is found by email:
         try:
             user_obj = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid email or password.")
+        except User.DoesNotExist as e:
+            raise serializers.ValidationError("Invalid email or password.") from e
 
         user = authenticate(username=user_obj.username, password=password)
         if not user:
             raise serializers.ValidationError("Invalid email or password.")
-            
+
         data["user"] = user
         return data

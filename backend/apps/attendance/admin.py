@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Attendance, SessionJoin, LeaveRequest
+
+from .models import Attendance, LeaveRequest, SessionJoin
+
 
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):

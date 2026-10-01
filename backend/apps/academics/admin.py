@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Course, Branch, Faculty, Level, Batch, Enrollment, Holiday, ClassSession
+
+from .models import Batch, Branch, ClassSession, Course, Enrollment, Faculty, Holiday, Level
+
 
 class LevelInline(admin.TabularInline):
     model = Level

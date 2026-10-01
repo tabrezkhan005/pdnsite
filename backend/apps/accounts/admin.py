@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, GuardianProfile, StudentProfile, StaffProfile, AuditLog, ConsentRecord
+
+from .models import AuditLog, ConsentRecord, GuardianProfile, StaffProfile, StudentProfile, User
+
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):

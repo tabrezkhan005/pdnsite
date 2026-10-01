@@ -8,6 +8,8 @@ This document records key architectural decisions for the Perin Devi Natyalayam 
 - **backend/** — Django 5.x with Django REST Framework. API-only; no server-rendered HTML.
 - **infra/** — Docker, nginx, and deployment configurations.
 - **docs/** — Architecture, deployment, and runbook documentation.
+  - `PERMISSIONS.md`: Details the role-based access control and queryset scoping.
+  - `API.md`: Details endpoints and authentication flow.
 
 The frontend and backend are separate deployable units. In production they will live on sibling subdomains (e.g. `app.pdn.example.com` and `api.pdn.example.com`).
 

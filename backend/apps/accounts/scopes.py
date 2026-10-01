@@ -1,7 +1,3 @@
-from django.db.models import Q
-from apps.accounts.models import StudentProfile
-from apps.academics.models import Batch, ClassSession, Enrollment
-from apps.attendance.models import Attendance, LeaveRequest
 
 def scope_students(queryset, user):
     """

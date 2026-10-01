@@ -1,6 +1,7 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import SessionViewSet, JoinSessionView, LeaveRequestViewSet, AttendanceSummaryView
+
+from .views import AttendanceSummaryView, JoinSessionView, LeaveRequestViewSet, SessionViewSet
 
 router = DefaultRouter()
 router.register(r'sessions', SessionViewSet, basename='session')

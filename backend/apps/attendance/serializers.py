@@ -1,11 +1,13 @@
 from rest_framework import serializers
-from .models import Attendance, SessionJoin, LeaveRequest
+
 from apps.academics.models import ClassSession
-from apps.accounts.serializers import UserSerializer
+
+from .models import Attendance, LeaveRequest
+
 
 class AttendanceSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source="student.full_name", read_only=True)
-    
+
     class Meta:
         model = Attendance
         fields = ["id", "session", "student", "student_name", "status", "source", "marked_by", "marked_at", "note"]

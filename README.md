@@ -51,6 +51,7 @@ python -m venv .venv
 pip install -r requirements/dev.txt
 cp .env.example .env   # then edit .env
 python manage.py migrate
+python manage.py seed      # Optional: seeds realistic demo data
 python manage.py runserver
 ```
 
@@ -74,8 +75,10 @@ python manage.py runserver
 ## Documentation
 
 - [Architecture decisions](docs/ARCHITECTURE.md)
-- Deployment guide (coming in Stage 6)
-- Runbook (coming in Stage 6)
+- [API & Endpoints](docs/API.md)
+- [Permissions & Role Matrix](docs/PERMISSIONS.md)
+- Deployment guide (coming soon)
+- Runbook (coming soon)
 
 ## License
 

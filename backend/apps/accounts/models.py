@@ -1,12 +1,14 @@
 import uuid
 from datetime import date
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction
-from common.models import TimeStampedModel, SoftDeleteModel
+
 from apps.academics.models import Branch
+from common.models import SoftDeleteModel, TimeStampedModel
 
 
 class User(AbstractUser):
@@ -66,14 +68,14 @@ class StudentProfile(TimeStampedModel, SoftDeleteModel):
     guardian = models.ForeignKey(GuardianProfile, on_delete=models.CASCADE, related_name="students")
     secondary_guardian = models.ForeignKey(GuardianProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="secondary_students")
     branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="students")
-    
+
     student_id = models.CharField(max_length=50, unique=True, db_index=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
     joined_on = models.DateField(default=date.today)
-    
+
     emergency_contact_name = models.CharField(max_length=255, blank=True)
     emergency_contact_phone = models.CharField(max_length=50, blank=True)
-    
+
     medical_notes = models.TextField(blank=True, help_text="Staff-visible only.")
     photo_consent = models.BooleanField(default=False)
 
@@ -99,11 +101,14 @@ class StudentIDCounter(models.Model):
     class Meta:
         unique_together = ("branch", "year")
 
+    def __str__(self):
+        return f"{self.branch.code} - {self.year}: {self.last_value}"
+
     @classmethod
     def generate_id(cls, branch):
         current_year = date.today().year % 100
         branch_code = branch.code or "XXX"
-        
+
         with transaction.atomic():
             counter, _ = cls.objects.select_for_update().get_or_create(
                 branch=branch,
@@ -112,7 +117,7 @@ class StudentIDCounter(models.Model):
             counter.last_value += 1
             counter.save()
             seq = counter.last_value
-            
+
         return f"PDN-{branch_code}-{current_year:02d}-{seq:04d}"
 
 
@@ -137,11 +142,11 @@ class ConsentRecord(TimeStampedModel):
 class AuditLog(TimeStampedModel):
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     action = models.CharField(max_length=255)
-    
+
     target_content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True)
-    target_object_id = models.CharField(max_length=255, null=True, blank=True)
+    target_object_id = models.CharField(max_length=255, null=True, blank=True)  # noqa: DJ001
     target = GenericForeignKey("target_content_type", "target_object_id")
-    
+
     before_state = models.JSONField(null=True, blank=True)
     after_state = models.JSONField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
