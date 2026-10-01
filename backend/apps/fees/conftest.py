@@ -1,13 +1,16 @@
-import pytest
 from datetime import date
-from apps.fees.models import FeePlan, StudentFeeAssignment, TaxConfig
+
+import pytest
+
 from apps.accounts.models import User
+from apps.fees.models import FeePlan, StudentFeeAssignment, TaxConfig
+
 
 @pytest.fixture
 def fee_setup(setup_data):
     course = setup_data["course"]
     student = setup_data["student"]
-    
+
     plan = FeePlan.objects.create(
         course=course,
         name="Monthly Fee",
@@ -18,15 +21,15 @@ def fee_setup(setup_data):
         late_fee_value=5000,
         effective_from=date(2026, 1, 1)
     )
-    
+
     assignment = StudentFeeAssignment.objects.create(
         student=student,
         fee_plan=plan,
         start_date=date(2026, 1, 1)
     )
-    
+
     TaxConfig.objects.create(name="GST", rate_basis_points=1800, is_active=True)
-    
+
     return {
         "student": student,
         "plan": plan,

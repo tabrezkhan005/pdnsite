@@ -118,6 +118,9 @@ def _process_successful_payment(payment, rzp_payment_entity):
     # Auto-allocate to oldest unpaid invoices for student
     _auto_allocate_payment(payment)
 
+    from .tasks import generate_receipt_task
+    generate_receipt_task.delay(payment.id)
+
 def _auto_allocate_payment(payment):
     remaining = payment.amount_paise
 
@@ -175,4 +178,8 @@ def record_offline_payment(student, amount_paise, method, user, reference_note=N
             target=payment,
             after_state={"amount": amount_paise, "method": method}
         )
+
+        from .tasks import generate_receipt_task
+        transaction.on_commit(lambda: generate_receipt_task.delay(payment.id))
+
         return payment

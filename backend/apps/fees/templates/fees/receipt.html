@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Receipt - {{ receipt.receipt_number }}</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .title { font-size: 24px; font-weight: bold; }
+        .subtitle { font-size: 16px; color: #666; }
+        .details { width: 100%; margin-bottom: 30px; border-collapse: collapse; }
+        .details td { padding: 5px; vertical-align: top; }
+        .details th { text-align: left; padding: 5px; }
+        .items { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .items th, .items td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .items th { background-color: #f8f9fa; }
+        .total { font-weight: bold; text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Perin Devi Natyalayam</div>
+        <div class="subtitle">Official Receipt</div>
+    </div>
+    
+    <table class="details">
+        <tr>
+            <th>Receipt Number:</th>
+            <td>{{ receipt.receipt_number }}</td>
+            <th>Date:</th>
+            <td>{{ receipt.created_at|date:"d M Y" }}</td>
+        </tr>
+        <tr>
+            <th>Student Name:</th>
+            <td>{{ student.full_name }}</td>
+            <th>Payment Method:</th>
+            <td>{{ payment.get_method_display }}</td>
+        </tr>
+    </table>
+    
+    <table class="items">
+        <thead>
+            <tr>
+                <th>Allocated To</th>
+                <th style="text-align: right;">Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alloc in allocations %}
+            <tr>
+                <td>Invoice {{ alloc.invoice.invoice_number }}</td>
+                <td style="text-align: right;">{{ alloc.amount_paise|add:"0"|widthratio:100:1 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">Unallocated advance payment</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td class="total">Total Paid</td>
+                <td class="total">{{ payment.amount_paise|add:"0"|widthratio:100:1 }}</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

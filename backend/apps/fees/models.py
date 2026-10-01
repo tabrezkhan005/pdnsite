@@ -276,3 +276,51 @@ class PaymentEvent(models.Model):
 
     def __str__(self):
         return f"{self.source} - {self.event_type} - {self.event_id}"
+
+class ReceiptCounter(models.Model):
+    financial_year = models.CharField(max_length=10)
+    last_value = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ("financial_year",)
+
+    def __str__(self):
+        return f"{self.financial_year}: {self.last_value}"
+
+    @classmethod
+    def generate_number(cls):
+        from django.utils import timezone
+
+        now = timezone.now()
+        year = now.year
+        month = now.month
+
+        if month >= 4:
+            fy = f"FY{year}-{str(year + 1)[2:]}"
+        else:
+            fy = f"FY{year - 1}-{str(year)[2:]}"
+
+        with transaction.atomic():
+            counter, _ = cls.objects.select_for_update().get_or_create(
+                financial_year=fy,
+                defaults={"last_value": 0}
+            )
+            counter.last_value += 1
+            counter.save(update_fields=['last_value'])
+
+            return f"PDN/REC/{fy}/{counter.last_value:05d}"
+
+class Receipt(TimeStampedModel):
+    receipt_number = models.CharField(max_length=255, unique=True, blank=True)
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="receipts")
+    student = models.ForeignKey('accounts.StudentProfile', on_delete=models.CASCADE, related_name="receipts")
+    amount_paise = models.PositiveIntegerField()
+    pdf_file = models.FileField(upload_to="receipts/%Y/%m/", null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.receipt_number} - {self.amount_paise}"
+
+    def save(self, *args, **kwargs):
+        if not self.receipt_number:
+            self.receipt_number = ReceiptCounter.generate_number()
+        super().save(*args, **kwargs)

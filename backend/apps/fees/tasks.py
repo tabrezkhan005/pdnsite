@@ -74,3 +74,15 @@ def apply_late_fees_task():
             apply_late_fees(invoice)
         except Exception as e:
             logger.exception(f"Failed to apply late fee to invoice {invoice.id}: {e}")
+
+@shared_task
+def generate_receipt_task(payment_id):
+    from .models import Payment
+    from .receipts import generate_receipt_pdf
+
+    try:
+        payment = Payment.objects.get(id=payment_id)
+        if not hasattr(payment, 'receipts') or not payment.receipts.exists():
+            generate_receipt_pdf(payment)
+    except Exception as e:
+        logger.exception(f"Failed to generate receipt for payment {payment_id}: {e}")

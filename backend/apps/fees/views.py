@@ -3,11 +3,11 @@ from rest_framework import permissions, serializers, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 
+from apps.accounts.models import StudentProfile
 from apps.accounts.scopes import scope_students
 
 from .gateways import get_gateway
 from .models import Invoice, Payment
-from apps.accounts.models import StudentProfile
 from .services_payments import create_payment_order, handle_payment_webhook
 
 

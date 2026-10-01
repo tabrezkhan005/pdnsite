@@ -3,13 +3,9 @@ from datetime import UTC, date
 import pytest
 from django.utils import timezone
 
-from apps.accounts.models import User
 from apps.fees.models import (
     FeeItem,
-    FeePlan,
     Invoice,
-    StudentFeeAssignment,
-    TaxConfig,
 )
 from apps.fees.services import (
     add_one_time_charge,
@@ -18,7 +14,6 @@ from apps.fees.services import (
     generate_invoices_for_period,
     void_invoice,
 )
-
 
 
 @pytest.mark.django_db
