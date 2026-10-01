@@ -227,11 +227,11 @@ def test_offline_payment_and_overpayment(payment_setup):
     assert invoice.balance_paise == 0
 
     # 32000 unallocated on the payment
-    total_allocated = sum(a.amount_paise for a in payment.allocations.all())
+    sum(a.amount_paise for a in payment.allocations.all())
 
     from apps.fees.models import Receipt
 
-    with patch("apps.fees.tasks.generate_receipt_task.delay") as mock_delay:
+    with patch("apps.fees.tasks.generate_receipt_task.delay"):
 
         # We can't actually run WeasyPrint in Windows tests without GTK+
         # So we manually create a receipt here to simulate the task

@@ -43,7 +43,7 @@ def create_payment_order(student, amount_paise, invoice_ids=None):
 
 def handle_payment_webhook(raw_payload_bytes, signature_header):
     """
-    Idempotent webhook handler. 
+    Idempotent webhook handler.
     """
     gateway = get_gateway()
     if not gateway.verify_webhook_signature(raw_payload_bytes, signature_header):
@@ -59,7 +59,7 @@ def handle_payment_webhook(raw_payload_bytes, signature_header):
 
     payment_data = payload.get("payload", {}).get("payment", {}).get("entity", {})
     order_id = payment_data.get("order_id")
-    amount = payment_data.get("amount")
+    payment_data.get("amount")
 
     if not order_id:
         # We only care about orders we generated
