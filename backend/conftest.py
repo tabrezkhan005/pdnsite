@@ -68,5 +68,6 @@ def setup_data():
         "branch": branch,
         "batch": batch,
         "student": student,
-        "staff": staff
+        "staff": staff,
+        "course": course
     }
