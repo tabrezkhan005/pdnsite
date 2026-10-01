@@ -32,3 +32,4 @@ weasyprint==63.1
 
 # Monitoring
 sentry-sdk[django]==2.19.2
+razorpay==1.4.1

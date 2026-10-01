@@ -208,3 +208,71 @@ class Adjustment(TimeStampedModel):
 
     def __str__(self):
         return f"{self.type} of {self.amount_paise} on {self.invoice}"
+
+class Payment(TimeStampedModel):
+    class Method(models.TextChoices):
+        ONLINE = "ONLINE", "Online"
+        CASH = "CASH", "Cash"
+        CHEQUE = "CHEQUE", "Cheque"
+        BANK_TRANSFER = "BANK_TRANSFER", "Bank Transfer"
+        UPI_MANUAL = "UPI_MANUAL", "UPI Manual"
+
+    class Status(models.TextChoices):
+        CREATED = "CREATED", "Created"
+        PENDING = "PENDING", "Pending"
+        CAPTURED = "CAPTURED", "Captured"
+        FAILED = "FAILED", "Failed"
+        REFUNDED = "REFUNDED", "Refunded"
+        PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED", "Partially Refunded"
+
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name="payments")
+    amount_paise = models.PositiveIntegerField()
+    currency = models.CharField(max_length=3, default="INR")
+    method = models.CharField(max_length=20, choices=Method.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CREATED)
+
+    razorpay_order_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    razorpay_payment_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True)
+    razorpay_method_detail = models.CharField(max_length=255, blank=True)
+
+    failure_reason = models.TextField(blank=True)
+    captured_at = models.DateTimeField(blank=True, null=True)
+
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="recorded_payments")
+    reference_note = models.TextField(blank=True)
+
+    is_amount_mismatch = models.BooleanField(default=False, help_text="True if webhook amount differs from order amount")
+
+    def __str__(self):
+        return f"{self.id} - {self.status} - {self.amount_paise}"
+
+class Allocation(TimeStampedModel):
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="allocations")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="allocations")
+    amount_paise = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.amount_paise} from {self.payment.id} to {self.invoice.invoice_number}"
+
+class PaymentEvent(models.Model):
+    class Source(models.TextChoices):
+        WEBHOOK = "WEBHOOK", "Webhook"
+        CHECKOUT = "CHECKOUT", "Checkout"
+        RECONCILIATION = "RECONCILIATION", "Reconciliation"
+        ADMIN = "ADMIN", "Admin"
+
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="events", null=True, blank=True)
+    source = models.CharField(max_length=20, choices=Source.choices)
+    event_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    event_type = models.CharField(max_length=255)
+    raw_payload = models.JSONField(null=True, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    processing_error = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-received_at"]
+
+    def __str__(self):
+        return f"{self.source} - {self.event_type} - {self.event_id}"

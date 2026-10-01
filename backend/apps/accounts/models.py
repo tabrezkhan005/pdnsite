@@ -88,6 +88,7 @@ class StaffProfile(TimeStampedModel):
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="staff")
     bio = models.TextField(blank=True)
     is_teacher = models.BooleanField(default=False)
+    can_record_payments = models.BooleanField(default=False, help_text="Can record offline payments and access financial data.")
 
     def __str__(self):
         return f"Staff: {self.user.get_full_name()}"
