@@ -1,0 +1,868 @@
+openapi: 3.0.3
+info:
+  title: Perin Devi Natyalayam API
+  version: 1.0.0
+  description: API for the PDN website and student portal.
+paths:
+  /api/academics/branches/:
+    get:
+      operationId: academics_branches_list
+      description: Public API to list and retrieve active branches.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - academics
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBranchList'
+          description: ''
+  /api/academics/branches/{slug}/:
+    get:
+      operationId: academics_branches_retrieve
+      description: Public API to list and retrieve active branches.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - academics
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+          description: ''
+  /api/academics/courses/:
+    get:
+      operationId: academics_courses_list
+      description: Public API to list and retrieve active courses.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - academics
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCourseList'
+          description: ''
+  /api/academics/courses/{slug}/:
+    get:
+      operationId: academics_courses_retrieve
+      description: Public API to list and retrieve active courses.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - academics
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+  /api/academics/faculty/:
+    get:
+      operationId: academics_faculty_list
+      description: Public API to list and retrieve active faculty members.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - academics
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFacultyList'
+          description: ''
+  /api/academics/faculty/{id}/:
+    get:
+      operationId: academics_faculty_retrieve
+      description: Public API to list and retrieve active faculty members.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this faculty.
+        required: true
+      tags:
+      - academics
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Faculty'
+          description: ''
+  /api/certificates/verify/:
+    get:
+      operationId: certificates_verify_retrieve
+      description: |-
+        Public API to verify a certificate by its code.
+        GET /api/certificates/verify/?code=XYZ
+      tags:
+      - certificates
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateVerification'
+          description: ''
+  /api/communications/contact/:
+    post:
+      operationId: communications_contact_create
+      description: Public API to submit contact messages.
+      tags:
+      - communications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContactMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContactMessage'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactMessage'
+          description: ''
+  /api/communications/enquiries/:
+    post:
+      operationId: communications_enquiries_create
+      description: Public API to submit admission enquiries.
+      tags:
+      - communications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdmissionEnquiry'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdmissionEnquiry'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdmissionEnquiry'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdmissionEnquiry'
+          description: ''
+  /api/content/events/:
+    get:
+      operationId: content_events_list
+      description: Public API to list and retrieve published events.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEventList'
+          description: ''
+  /api/content/events/{slug}/:
+    get:
+      operationId: content_events_retrieve
+      description: Public API to list and retrieve published events.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: ''
+  /api/content/gallery/:
+    get:
+      operationId: content_gallery_list
+      description: Public API to list and retrieve published gallery items.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGalleryItemList'
+          description: ''
+  /api/content/gallery/{id}/:
+    get:
+      operationId: content_gallery_retrieve
+      description: Public API to list and retrieve published gallery items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this gallery item.
+        required: true
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GalleryItem'
+          description: ''
+  /api/content/pages/:
+    get:
+      operationId: content_pages_list
+      description: Public API to list and retrieve published pages.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPageList'
+          description: ''
+  /api/content/pages/{slug}/:
+    get:
+      operationId: content_pages_retrieve
+      description: Public API to list and retrieve published pages.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+          description: ''
+  /api/content/testimonials/:
+    get:
+      operationId: content_testimonials_list
+      description: Public API to list and retrieve published testimonials.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTestimonialList'
+          description: ''
+  /api/content/testimonials/{id}/:
+    get:
+      operationId: content_testimonials_retrieve
+      description: Public API to list and retrieve published testimonials.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this testimonial.
+        required: true
+      tags:
+      - content
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Testimonial'
+          description: ''
+components:
+  schemas:
+    AdmissionEnquiry:
+      type: object
+      properties:
+        student_name:
+          type: string
+          maxLength: 255
+        parent_name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 50
+        course_interest:
+          type: string
+          maxLength: 255
+        message:
+          type: string
+      required:
+      - phone
+      - student_name
+    Branch:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        address:
+          type: string
+        phone:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        map_url:
+          type: string
+          format: uri
+          description: Google Maps embed URL or link
+          maxLength: 200
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - address
+      - id
+      - name
+      - phone
+      - slug
+    CertificateVerification:
+      type: object
+      properties:
+        verification_code:
+          type: string
+          maxLength: 50
+        student_name:
+          type: string
+          maxLength: 255
+        course_name:
+          type: string
+          maxLength: 255
+        issue_date:
+          type: string
+          format: date
+        grade:
+          type: string
+          maxLength: 50
+        pdf_file:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - course_name
+      - issue_date
+      - student_name
+    ContactMessage:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 50
+        subject:
+          type: string
+          maxLength: 255
+        message:
+          type: string
+      required:
+      - email
+      - message
+      - name
+      - subject
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        short_description:
+          type: string
+          maxLength: 500
+        duration:
+          type: string
+          description: e.g., '6 months', '1 year'
+          maxLength: 100
+        monthly_fee:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Fee in paise (e.g. 150000 = ₹1500)
+        image:
+          type: string
+          format: uri
+          nullable: true
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - description
+      - duration
+      - id
+      - slug
+      - title
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+        location:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - description
+      - id
+      - slug
+      - start_date
+      - title
+    Faculty:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        role:
+          type: string
+          description: e.g. 'Senior Instructor', 'Director'
+          maxLength: 255
+        bio:
+          type: string
+        image:
+          type: string
+          format: uri
+          nullable: true
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - id
+      - name
+      - role
+    GalleryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+        description:
+          type: string
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - id
+      - image
+      - title
+    Page:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        content:
+          type: string
+      required:
+      - content
+      - id
+      - slug
+      - title
+    PaginatedBranchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Branch'
+    PaginatedCourseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Course'
+    PaginatedEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+    PaginatedFacultyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Faculty'
+    PaginatedGalleryItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GalleryItem'
+    PaginatedPageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Page'
+    PaginatedTestimonialList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Testimonial'
+    Testimonial:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        student_name:
+          type: string
+          maxLength: 255
+        course_name:
+          type: string
+          maxLength: 255
+        text:
+          type: string
+        video_url:
+          type: string
+          format: uri
+          description: Optional YouTube/Vimeo link
+          maxLength: 200
+        image:
+          type: string
+          format: uri
+          nullable: true
+        rating:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: Rating out of 5
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - id
+      - student_name
+      - text
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

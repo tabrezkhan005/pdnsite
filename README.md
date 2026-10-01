@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Perin Devi Natyalayam
 
-## Getting Started
+Website and student portal for **Perin Devi Natyalayam**, a Kuchipudi classical dance school.
 
-First, run the development server:
+## Repository structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+├── frontend/        # Next.js (TypeScript, App Router, Tailwind v4)
+├── backend/         # Django REST API (Python 3.12+)
+├── infra/           # Infrastructure configs (Dockerfiles, nginx, etc.)
+├── docs/            # Architecture decisions, runbooks, deployment notes
+├── .github/         # CI/CD workflows
+├── docker-compose.yml
+├── package.json     # Root npm scripts (cross-platform task runner)
+└── .editorconfig
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Prerequisites
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Tool           | Version  |
+| -------------- | -------- |
+| Node.js        | LTS (22) |
+| Python         | 3.12+    |
+| Docker Desktop | Latest   |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Quick start
 
-## Learn More
+### Frontend (Next.js)
 
-To learn more about Next.js, take a look at the following resources:
+```powershell
+cd frontend
+npm install
+npm run dev          # http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Backend (Django) — via Docker
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```powershell
+# From repo root
+npm run docker:up    # Starts Postgres, Redis, backend, Celery
+npm run docker:migrate
+# API available at http://localhost:8000
+```
 
-## Deploy on Vercel
+### Backend (Django) — local Python
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements/dev.txt
+cp .env.example .env   # then edit .env
+python manage.py migrate
+python manage.py runserver
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Root npm scripts
+
+| Script              | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `frontend:dev`      | Start Next.js dev server                     |
+| `frontend:build`    | Production build of the frontend             |
+| `frontend:lint`     | Lint the frontend                            |
+| `frontend:install`  | Install frontend dependencies                |
+| `backend:dev`       | Start Django dev server (requires local venv) |
+| `backend:test`      | Run backend tests with pytest                |
+| `backend:lint`      | Lint backend with ruff                       |
+| `backend:migrate`   | Run Django migrations (local)                |
+| `docker:up`         | Start all Docker services                    |
+| `docker:down`       | Stop all Docker services                     |
+| `docker:logs`       | Tail logs from all Docker services           |
+| `docker:migrate`    | Run migrations inside the Docker backend     |
+
+## Documentation
+
+- [Architecture decisions](docs/ARCHITECTURE.md)
+- Deployment guide (coming in Stage 6)
+- Runbook (coming in Stage 6)
+
+## License
+
+Private — all rights reserved.

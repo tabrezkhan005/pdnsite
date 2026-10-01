@@ -1,0 +1,13 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+healthcheckPath = "/health/"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[phases.setup]
+nixPkgs = ["python312"]
