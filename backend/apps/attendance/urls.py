@@ -1,9 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TeacherSessionViewSet, JoinSessionView, LeaveRequestViewSet, AttendanceSummaryView
+from .views import SessionViewSet, JoinSessionView, LeaveRequestViewSet, AttendanceSummaryView
 
 router = DefaultRouter()
-router.register(r'sessions', TeacherSessionViewSet, basename='session')
+router.register(r'sessions', SessionViewSet, basename='session')
 router.register(r'leaves', LeaveRequestViewSet, basename='leave')
 
 urlpatterns = [

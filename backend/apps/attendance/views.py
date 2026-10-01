@@ -6,23 +6,19 @@ from rest_framework.decorators import action
 from .models import Attendance, LeaveRequest
 from apps.academics.models import ClassSession, Enrollment
 from apps.accounts.services import log_audit_event
-from .serializers import AttendanceSerializer, BulkAttendanceSerializer, LeaveRequestSerializer
+from .serializers import AttendanceSerializer, BulkAttendanceSerializer, LeaveRequestSerializer, SessionSerializer
 from .services import join_session, approve_leave, get_attendance_summary
 
-class TeacherSessionViewSet(viewsets.ReadOnlyModelViewSet):
+class SessionViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Teacher can see their sessions.
-    GET /api/v1/attendance/sessions/
-    GET /api/v1/attendance/sessions/{id}/roster/
-    POST /api/v1/attendance/sessions/{id}/bulk_mark/
+    List sessions scoped to user role.
     """
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SessionSerializer
     
     def get_queryset(self):
-        user = self.request.user
-        if user.role == "STAFF" and hasattr(user, 'staff_profile'):
-            return ClassSession.objects.filter(batch__teacher=user.staff_profile)
-        return ClassSession.objects.none()
+        from apps.accounts.scopes import scope_sessions
+        return scope_sessions(ClassSession.objects.all(), self.request.user)
 
     @action(detail=True, methods=['get'])
     def roster(self, request, pk=None):
@@ -113,15 +109,24 @@ class JoinSessionView(views.APIView):
 
     def post(self, request, pk=None):
         session = get_object_or_404(ClassSession, pk=pk)
-        
         user = request.user
-        if user.role != "STUDENT" or not hasattr(user, 'student_profile'):
-            return response.Response({"detail": "Only students can join sessions online."}, status=status.HTTP_403_FORBIDDEN)
-            
+        
+        from apps.accounts.scopes import scope_students
+        from apps.accounts.models import StudentProfile
+        
+        student_id = request.data.get("student_id")
+        if student_id:
+            student = get_object_or_404(scope_students(StudentProfile.objects.all(), user), id=student_id)
+        else:
+            if user.role == "STUDENT" and hasattr(user, 'student_profile'):
+                student = user.student_profile
+            else:
+                return response.Response({"detail": "student_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+                
         try:
             url = join_session(
                 session=session,
-                student=user.student_profile,
+                student=student,
                 ip_address=request.META.get('REMOTE_ADDR'),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
                 actor=user
@@ -139,14 +144,8 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
     
     def get_queryset(self):
-        user = self.request.user
-        if user.role == "STUDENT" and hasattr(user, 'student_profile'):
-            return LeaveRequest.objects.filter(student=user.student_profile)
-        if user.role == "GUARDIAN" and hasattr(user, 'guardian_profile'):
-            return LeaveRequest.objects.filter(student__guardian=user.guardian_profile)
-        if user.role in ["STAFF", "ADMIN"]:
-            return LeaveRequest.objects.all()
-        return LeaveRequest.objects.none()
+        from apps.accounts.scopes import scope_leaves
+        return scope_leaves(LeaveRequest.objects.all(), self.request.user)
         
     def perform_create(self, serializer):
         user = self.request.user
@@ -181,14 +180,24 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
 
 class AttendanceSummaryView(views.APIView):
     """
-    GET /api/v1/attendance/summary/
+    GET /api/v1/attendance/summary/?student_id=xxx
     """
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
         user = request.user
-        if user.role == "STUDENT" and hasattr(user, 'student_profile'):
-            student = user.student_profile
-            summary = get_attendance_summary(student)
-            return response.Response(summary)
-        return response.Response({"detail": "Not a student."}, status=status.HTTP_400_BAD_REQUEST)
+        student_id = request.query_params.get("student_id")
+        
+        from apps.accounts.scopes import scope_students
+        from apps.accounts.models import StudentProfile
+        
+        if student_id:
+            student = get_object_or_404(scope_students(StudentProfile.objects.all(), user), id=student_id)
+        else:
+            if user.role == "STUDENT" and hasattr(user, 'student_profile'):
+                student = user.student_profile
+            else:
+                return response.Response({"detail": "student_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+                
+        summary = get_attendance_summary(student)
+        return response.Response(summary)

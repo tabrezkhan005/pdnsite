@@ -20,6 +20,11 @@ class BulkAttendanceSerializer(serializers.Serializer):
     )
 
 
+class SessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassSession
+        fields = ["id", "batch", "starts_at", "ends_at", "mode", "meeting_url", "status", "cancellation_reason", "notes", "is_makeup"]
+
 class LeaveRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveRequest
